@@ -1,1 +1,1 @@
-# ayuvibe-backend
+# AyuVibe backend API
