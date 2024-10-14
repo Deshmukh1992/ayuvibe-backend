@@ -6,8 +6,9 @@ from database.db import engine, get_db, Base
 from typing import List
 from utils.schema import (PatientSignup, PatientUpdate, DoctorSignup, DoctorUpdate,
                           AppointmentCreate, AppointmentUpdate, DiagnosisCreate, DiagnosisUpdate,
-                          TreatmentCreate, TreatmentUpdate, FollowUpCreate, FollowUpUpdate, Login)
-from utils.models import Doctor, Patient, Appointment, Diagnosis, Treatment, FollowUp
+                          TreatmentCreate, TreatmentUpdate, FollowUpCreate, FollowUpUpdate, Login, HerbResponse,
+                          HerbCreate, RemedyResponse, RemedyCreate)
+from utils.models import Doctor, Patient, Appointment, Diagnosis, Treatment, FollowUp, Herb, Remedy
 from utils.jwt import hash_password, verify_password, create_access_token
 from fastapi.security import OAuth2PasswordBearer
 from datetime import timedelta
@@ -415,3 +416,82 @@ def delete_follow_up(follow_up_id: int, db: Session = Depends(get_db)):
 
 
 
+# CRUD operations for Herbs
+@app.post("/herbs/", tags=["Herbs"])
+def create_herb(herb: HerbCreate, db: Session = Depends(get_db)):
+    db_herb = Herb(**herb.dict())
+    db.add(db_herb)
+    db.commit()
+    db.refresh(db_herb)
+    return db_herb
+
+@app.get("/herbs/", tags=["Herbs"])
+def read_herbs(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    herbs = db.query(Herb).offset(skip).limit(limit).all()
+    return herbs
+
+@app.get("/herbs/{herb_id}", tags=["Herbs"])
+def read_herb(herb_id: int, db: Session = Depends(get_db)):
+    herb = db.query(Herb).filter(Herb.herb_id == herb_id).first()
+    if herb is None:
+        raise HTTPException(status_code=404, detail="Herb not found")
+    return herb
+
+@app.put("/herbs/{herb_id}", tags=["Herbs"])
+def update_herb(herb_id: int, herb: HerbCreate, db: Session = Depends(get_db)):
+    db_herb = db.query(Herb).filter(Herb.herb_id == herb_id).first()
+    if db_herb is None:
+        raise HTTPException(status_code=404, detail="Herb not found")
+    for key, value in herb.dict().items():
+        setattr(db_herb, key, value)
+    db.commit()
+    return db_herb
+
+@app.delete("/herbs/{herb_id}", tags=["Herbs"])
+def delete_herb(herb_id: int, db: Session = Depends(get_db)):
+    db_herb = db.query(Herb).filter(Herb.herb_id == herb_id).first()
+    if db_herb is None:
+        raise HTTPException(status_code=404, detail="Herb not found")
+    db.delete(db_herb)
+    db.commit()
+    return {"detail": "Herb deleted"}
+
+# CRUD operations for Remedies
+@app.post("/remedies/", tags=["Remedies"])
+def create_remedy(remedy: RemedyCreate, db: Session = Depends(get_db)):
+    db_remedy = Remedy(**remedy.dict())
+    db.add(db_remedy)
+    db.commit()
+    db.refresh(db_remedy)
+    return db_remedy
+
+@app.get("/remedies/", tags=["Remedies"])
+def read_remedies(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    remedies = db.query(Remedy).offset(skip).limit(limit).all()
+    return remedies
+
+@app.get("/remedies/{remedy_id}", tags=["Remedies"])
+def read_remedy(remedy_id: int, db: Session = Depends(get_db)):
+    remedy = db.query(Remedy).filter(Remedy.remedy_id == remedy_id).first()
+    if remedy is None:
+        raise HTTPException(status_code=404, detail="Remedy not found")
+    return remedy
+
+@app.put("/remedies/{remedy_id}", tags=["Remedies"])
+def update_remedy(remedy_id: int, remedy: RemedyCreate, db: Session = Depends(get_db)):
+    db_remedy = db.query(Remedy).filter(Remedy.remedy_id == remedy_id).first()
+    if db_remedy is None:
+        raise HTTPException(status_code=404, detail="Remedy not found")
+    for key, value in remedy.dict().items():
+        setattr(db_remedy, key, value)
+    db.commit()
+    return db_remedy
+
+@app.delete("/remedies/{remedy_id}", tags=["Remedies"])
+def delete_remedy(remedy_id: int, db: Session = Depends(get_db)):
+    db_remedy = db.query(Remedy).filter(Remedy.remedy_id == remedy_id).first()
+    if db_remedy is None:
+        raise HTTPException(status_code=404, detail="Remedy not found")
+    db.delete(db_remedy)
+    db.commit()
+    return {"detail": "Remedy deleted"}

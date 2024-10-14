@@ -77,3 +77,27 @@ class FollowUp(Base):
     follow_up_notes = Column(Text)
 
     appointment = relationship("Appointment")
+
+
+class Herb(Base):
+    __tablename__ = 'herbs'
+
+    herb_id = Column(Integer, primary_key=True, index=True)
+    herb_name = Column(String, nullable=False)
+    botanical_name = Column(String)
+    common_names = Column(String)
+    benefits = Column(Text)
+    primary_uses = Column(Text)
+    dosage = Column(String)
+    form = Column(String)
+
+class Remedy(Base):
+    __tablename__ = 'remedies'
+
+    remedy_id = Column(Integer, primary_key=True, index=True)
+    remedy_name = Column(String, nullable=False)
+    ingredients = Column(Text)
+    benefits = Column(Text)
+    preparation_method = Column(Text)
+    dosage_instructions = Column(String)
+    precautions = Column(Text)

@@ -133,3 +133,27 @@ class Login(BaseModel):
     email: EmailStr
     password: str
 
+
+class HerbCreate(BaseModel):
+    herb_name: str
+    botanical_name: str = None
+    common_names: str = None
+    benefits: str = None
+    primary_uses: str = None
+    dosage: str = None
+    form: str = None
+
+class HerbResponse(HerbCreate):
+    herb_id: int
+
+class RemedyCreate(BaseModel):
+    remedy_name: str
+    ingredients: str
+    benefits: str
+    preparation_method: str = None
+    dosage_instructions: str = None
+    precautions: str = None
+
+class RemedyResponse(RemedyCreate):
+    remedy_id: int
+
