@@ -1,103 +1,126 @@
 # AyuVibe Backend
 
-AyuVibe is an Ayurvedic medicine application backend built with **FastAPI** and **PostgreSQL**. It provides functionalities such as user authentication, a doctor directory, herbal remedies database, and an Ayurvedic chatbot.
+The backend of the AyuVibe application serves as the core for managing data, authentication, and API integrations to bring Ayurveda closer to modern users. This repository contains the server-side logic and APIs that power the AyuVibe platform.
+
+---
 
 ## Features
 
-- **User Authentication**: Secure login and signup functionalities using JWT.
-- **Doctor Directory**: Browse and search for Ayurvedic doctors.
-- **Herbal Remedies**: Comprehensive database of herbs and their uses.
-- **Ayurvedic Chatbot**: Interactive chatbot for Ayurvedic consultations.
-- **API Documentation**: Automatically generated with Swagger UI.
-- **Deployment Ready**: Containerized with Docker and deployable on Kubernetes.
+- **Authentication**: Secure user login and token-based authentication.
+- **Doctor Management**: APIs for managing and querying Ayurvedic doctor profiles.
+- **Herbs and Remedies**: CRUD operations for managing the Ayurvedic herbs database.
+- **Chatbot Integration**: Backend logic to support the Ayurveda chatbot.
+- **Scalable Architecture**: Designed for high performance and scalability.
+
+---
 
 ## Tech Stack
 
-- **Backend Framework**: [FastAPI](https://fastapi.tiangolo.com/)
-- **Database**: [PostgreSQL](https://www.postgresql.org/)
-- **ORM**: [SQLAlchemy](https://www.sqlalchemy.org/)
-- **Authentication**: JWT (JSON Web Tokens)
-- **API Documentation**: Swagger UI (built-in with FastAPI)
-- **Deployment**: Docker & Kubernetes
+- **Framework**: Node.js with Express.js
+- **Database**: MongoDB or PostgreSQL (specify your choice)
+- **Authentication**: JSON Web Tokens (JWT)
+- **Deployment**: Docker and Kubernetes (if applicable)
+- **Version Control**: Git and GitHub
 
-## Table of Contents
+---
 
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Database Setup](#database-setup)
-- [Running the Server](#running-the-server)
-- [API Endpoints](#api-endpoints)
-- [Testing](#testing)
-- [Docker](#docker)
-- [Kubernetes Deployment](#kubernetes-deployment)
-- [Contributing](#contributing)
-- [License](#license)
+## Getting Started
 
-## Prerequisites
+Follow these steps to set up and run the project locally:
 
-Ensure you have the following installed on your machine:
+### Prerequisites
+- Python (v3.10 or later)
+- PostgreSQL installed locally or on a cloud provider
+- Git installed
 
-- **Python**: Version 3.8 or above. [Download Python](https://www.python.org/downloads/)
-- **PostgreSQL**: Version 12 or above. [Download PostgreSQL](https://www.postgresql.org/download/)
-- **Git**: For cloning the repository. [Download Git](https://git-scm.com/downloads)
-- **Docker** (optional): For containerized deployments. [Download Docker](https://www.docker.com/get-started)
-- **Docker Compose** (optional): For managing multi-container Docker applications. [Install Docker Compose](https://docs.docker.com/compose/install/)
+### Installation
 
-## Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Deshmukh1992/ayuvibe-backend.git
+   ```
+2. Navigate to the project directory:
+   ```bash
+   cd ayuvibe-backend
+   ```
+3. Install dependencies:
+   ```bash
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
 
-1. **Clone the Repository**
+### Configuration
 
-    ```bash
-    git clone https://github.com/Deshmukh1992/ayuvibe-backend.git
-    cd ayuvibe-backend
-    ```
+1. Create a `.env` file in the root directory and configure the following environment variables:
+   ```env
+   PORT=5000
+   DB_URI=your_database_connection_string
+   JWT_SECRET=your_jwt_secret_key
+   ```
 
-2. **Set Up a Virtual Environment**
+### Running the Application
 
-    It's recommended to use a virtual environment to manage dependencies.
+1. Start the development server:
+   ```bash
+   uvicorn main:app --reload
+   ```
+   
+2. The server will be running at:
+   ```
+   http://localhost:8000
+   ```
 
-    ```bash
-    python -m venv venv
-    ```
+---
 
-    Activate the virtual environment:
+## Project Structure
 
-    - On **Unix or MacOS**:
-
-        ```bash
-        source venv/bin/activate
-        ```
-
-    - On **Windows**:
-
-        ```bash
-        venv\Scripts\activate
-        ```
-
-3. **Install Dependencies**
-
-    ```bash
-    pip install --upgrade pip
-    pip install -r requirements.txt
-    ```
-
-## Configuration
-
-Create a `.env` file in the root directory of the project and add the following environment variables:
-
-```env
-# Server Configuration
-HOST=0.0.0.0
-PORT=8000
-DEBUG=True
-
-# Database Configuration
-DATABASE_URL=postgresql://username:password@localhost:5432/ayuvibe_db
-
-# JWT Configuration
-SECRET_KEY=your_jwt_secret_key
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+```
+ayuvibe-backend/
+│
+├── database/                
+│   ├── db.py        
+├── utils/                
+│   ├── jwt.py    
+│   ├── models.py/         
+│   ├── schemas.py/
+├── main.py        
+├── requirements.txt                
+└── README.md           
 ```
 
+---
+
+## Contribution Guidelines
+
+Contributions are welcome! Please follow these steps to contribute:
+
+1. Fork the repository.
+2. Create a new branch:
+   ```bash
+   git checkout -b feature-name
+   ```
+3. Commit your changes:
+   ```bash
+   git commit -m "Add a meaningful message"
+   ```
+4. Push to your forked repository:
+   ```bash
+   git push origin feature-name
+   ```
+5. Open a pull request.
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+## Contact
+
+For any queries or feedback, please feel free to reach out:
+
+- **Author**: [Deshmukh1992](https://github.com/Deshmukh1992)
+
+---
