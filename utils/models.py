@@ -4,6 +4,7 @@ from sqlalchemy import Column, Integer, String, func, ForeignKey, Date, DateTime
 from sqlalchemy.orm import relationship
 from database.db import Base
 
+
 # Models for SQLAlchemy
 class Patient(Base):
     __tablename__ = "patients"
@@ -21,6 +22,7 @@ class Patient(Base):
     registration_date = Column(DateTime, server_default=func.now())
     password = Column(String(255), nullable=False)
 
+
 class Doctor(Base):
     __tablename__ = "doctors"
     doctor_id = Column(Integer, primary_key=True, index=True)
@@ -36,6 +38,7 @@ class Doctor(Base):
     registration_date = Column(DateTime, server_default=func.now())
     password = Column(String(255), nullable=False)
 
+
 class Appointment(Base):
     __tablename__ = "appointments"
     appointment_id = Column(Integer, primary_key=True, index=True)
@@ -49,6 +52,7 @@ class Appointment(Base):
     patient = relationship("Patient")
     doctor = relationship("Doctor")
 
+
 class Diagnosis(Base):
     __tablename__ = "diagnoses"
     diagnosis_id = Column(Integer, primary_key=True, index=True)
@@ -57,6 +61,7 @@ class Diagnosis(Base):
     diagnosis_description = Column(Text, nullable=False)
 
     appointment = relationship("Appointment")
+
 
 class Treatment(Base):
     __tablename__ = "treatments"
@@ -68,6 +73,7 @@ class Treatment(Base):
     created_at = Column(DateTime, server_default=func.now())
 
     diagnosis = relationship("Diagnosis")
+
 
 class FollowUp(Base):
     __tablename__ = "follow_ups"
@@ -90,6 +96,7 @@ class Herb(Base):
     primary_uses = Column(Text)
     dosage = Column(String)
     form = Column(String)
+
 
 class Remedy(Base):
     __tablename__ = 'remedies'

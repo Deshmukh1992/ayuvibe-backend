@@ -1,18 +1,20 @@
 # main.py
 
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.db import engine, get_db, Base
-from typing import List
 from utils.schema import (PatientSignup, PatientUpdate, DoctorSignup, DoctorUpdate,
                           AppointmentCreate, AppointmentUpdate, DiagnosisCreate, DiagnosisUpdate,
-                          TreatmentCreate, TreatmentUpdate, FollowUpCreate, FollowUpUpdate, Login, HerbResponse,
-                          HerbCreate, RemedyResponse, RemedyCreate)
+                          TreatmentCreate, TreatmentUpdate, FollowUpCreate, FollowUpUpdate, Login, InputText,
+                          HerbCreate, RemedyCreate)
 from utils.models import Doctor, Patient, Appointment, Diagnosis, Treatment, FollowUp, Herb, Remedy
 from utils.jwt import hash_password, verify_password, create_access_token
 from fastapi.security import OAuth2PasswordBearer
 from datetime import timedelta
-
+from fastapi.middleware.cors import CORSMiddleware
+from transformers import BertTokenizer, BertForSequenceClassification
+import torch
+from sklearn.preprocessing import LabelEncoder
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth")
 
@@ -21,10 +23,32 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AyuVibe - Ayurvedic Doctors Directory")
 
+origins = ['*']
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Load the pre-trained model and tokenizer
+model = BertForSequenceClassification.from_pretrained('utils/my_model')
+tokenizer = BertTokenizer.from_pretrained('utils/my_model')
+
+# Load the LabelEncoder that was used during training
+label_encoder = LabelEncoder()
+label_encoder.classes_ = torch.load('utils/label_encoder_classes.pt')  # Assuming you've saved the encoder's classes_
+
+# Set the model to evaluation mode
+model.eval()
+
 
 @app.get("/", tags=["Home"])
 def home():
     return {"message": "This is AyuVibe home"}
+
 
 # Routes
 # Patients CRUD Endpoints
@@ -87,14 +111,13 @@ def login_user(login: Login, db: Session = Depends(get_db)):
     if not verify_password(login.password, user.password):
         raise HTTPException(status_code=400, detail="Invalid email or password")
 
-
     print("====================================")
     print(user)
     print("====================================")
 
     # Returning user data (excluding password)
     user_data = {
-        # "user_id": user.id,
+        "user_id": user.patient_id if isinstance(user, Patient) else user.doctor_id,
         "first_name": user.first_name,
         "last_name": user.last_name,
         "email": user.email,
@@ -170,6 +193,7 @@ def doctor_signup(doctor: DoctorSignup, db: Session = Depends(get_db)):
     db.refresh(new_doctor)
     return {"message": "Doctor registered successfully"}
 
+
 @app.get("/doctors/", tags=["Doctor"])
 def get_doctors(db: Session = Depends(get_db)):
     return db.query(Doctor).all()
@@ -211,13 +235,14 @@ def get_doctor_by_id(doctor_id: int, db: Session = Depends(get_db)):
 
 
 # Appointments CRUD Endpoints
-@app.post("/appointments/", response_model=AppointmentCreate, tags=["Appointments"])
+@app.post("/appointments/", tags=["Appointments"])
 def create_appointment(appointment: AppointmentCreate, db: Session = Depends(get_db)):
     db_appointment = Appointment(**appointment.dict())
     db.add(db_appointment)
     db.commit()
     db.refresh(db_appointment)
     return db_appointment
+
 
 @app.get("/appointments/", tags=["Appointments"])
 def get_appointments(db: Session = Depends(get_db)):
@@ -237,6 +262,63 @@ def update_appointment(appointment_id: int, appointment: AppointmentUpdate, db: 
     db.commit()
     db.refresh(db_appointment)
     return db_appointment
+
+
+@app.get("/patients/{patient_id}/appointments", tags=["Appointments"])
+def get_appointments_by_patient(patient_id: int, db: Session = Depends(get_db)):
+    appointments = db.query(Appointment).filter(Appointment.patient_id == patient_id).all()
+
+    if not appointments:
+        raise HTTPException(status_code=404, detail="No appointments found for this patient")
+
+    # Prepare response with doctor details
+    appointment_details = []
+    for appointment in appointments:
+        doctor = db.query(Doctor).filter(Doctor.doctor_id == appointment.doctor_id).first()
+        appointment_details.append({
+            "appointment_id": appointment.appointment_id,
+            "appointment_date": appointment.appointment_date,
+            "reason": appointment.reason,
+            "appointment_status": appointment.appointment_status,
+            "doctor": {
+                "doctor_id": doctor.doctor_id,
+                "first_name": doctor.first_name,
+                "last_name": doctor.last_name,
+                "specialization": doctor.specialization,
+                "phone_number": doctor.phone_number,
+                "email": doctor.email,
+            } if doctor else None
+        })
+
+    return appointment_details
+
+
+@app.get("/doctors/{doctor_id}/appointments", tags=["Appointments"])
+def get_appointments_by_doctor(doctor_id: int, db: Session = Depends(get_db)):
+    appointments = db.query(Appointment).filter(Appointment.doctor_id == doctor_id).all()
+
+    if not appointments:
+        raise HTTPException(status_code=404, detail="No appointments found for this doctor")
+
+    # Prepare response with patient details
+    appointment_details = []
+    for appointment in appointments:
+        patient = db.query(Patient).filter(Patient.patient_id == appointment.patient_id).first()
+        appointment_details.append({
+            "appointment_id": appointment.appointment_id,
+            "appointment_date": appointment.appointment_date,
+            "reason": appointment.reason,
+            "appointment_status": appointment.appointment_status,
+            "patient": {
+                "patient_id": patient.patient_id,
+                "first_name": patient.first_name,
+                "last_name": patient.last_name,
+                "phone_number": patient.phone_number,
+                "email": patient.email,
+            } if patient else None
+        })
+
+    return appointment_details
 
 
 # Delete Appointment
@@ -263,10 +345,14 @@ def get_appointment_by_id(appointment_id: int, db: Session = Depends(get_db)):
 def get_diagnoses_and_treatments_by_appointment(appointment_id: int, db: Session = Depends(get_db)):
     diagnoses = db.query(Diagnosis).filter(Diagnosis.appointment_id == appointment_id).all()
 
-    if not diagnoses:
-        raise HTTPException(status_code=404, detail="No diagnoses found for this appointment")
-
     result = []
+
+    if not diagnoses:
+        result.append({
+            "diagnosis": "No diagnoses found for this appointment",
+            "treatments": "No treatments found for this appointment"
+        })
+
     for diagnosis in diagnoses:
         treatments = db.query(Treatment).filter(Treatment.diagnosis_id == diagnosis.diagnosis_id).all()
         result.append({
@@ -276,14 +362,16 @@ def get_diagnoses_and_treatments_by_appointment(appointment_id: int, db: Session
 
     return result
 
+
 # Diagnoses CRUD Endpoints
-@app.post("/diagnoses/", response_model=DiagnosisCreate, tags=["Diagnoses"])
+@app.post("/diagnoses/", tags=["Diagnoses"])
 def create_diagnosis(diagnosis: DiagnosisCreate, db: Session = Depends(get_db)):
     db_diagnosis = Diagnosis(**diagnosis.dict())
     db.add(db_diagnosis)
     db.commit()
     db.refresh(db_diagnosis)
     return db_diagnosis
+
 
 @app.get("/diagnoses/", tags=["Diagnoses"])
 def get_diagnoses(db: Session = Depends(get_db)):
@@ -326,13 +414,14 @@ def get_diagnosis_by_id(diagnosis_id: int, db: Session = Depends(get_db)):
 
 
 # Treatments CRUD Endpoints
-@app.post("/treatments/", response_model=TreatmentCreate, tags=["Treatment"])
+@app.post("/treatments/", tags=["Treatment"])
 def create_treatment(treatment: TreatmentCreate, db: Session = Depends(get_db)):
     db_treatment = Treatment(**treatment.dict())
     db.add(db_treatment)
     db.commit()
     db.refresh(db_treatment)
     return db_treatment
+
 
 @app.get("/treatments/", tags=["Treatment"])
 def get_treatments(db: Session = Depends(get_db)):
@@ -375,13 +464,14 @@ def get_treatment_by_id(treatment_id: int, db: Session = Depends(get_db)):
 
 
 # Follow-Ups CRUD Endpoints
-@app.post("/follow_ups/", response_model=FollowUpCreate, tags=["Follow Ups"])
+@app.post("/follow_ups/", tags=["Follow Ups"])
 def create_follow_up(follow_up: FollowUpCreate, db: Session = Depends(get_db)):
     db_follow_up = FollowUp(**follow_up.dict())
     db.add(db_follow_up)
     db.commit()
     db.refresh(db_follow_up)
     return db_follow_up
+
 
 @app.get("/follow_ups/", tags=["Follow Ups"])
 def get_follow_ups(db: Session = Depends(get_db)):
@@ -415,7 +505,6 @@ def delete_follow_up(follow_up_id: int, db: Session = Depends(get_db)):
     return {"message": "Follow-Up deleted successfully"}
 
 
-
 # CRUD operations for Herbs
 @app.post("/herbs/", tags=["Herbs"])
 def create_herb(herb: HerbCreate, db: Session = Depends(get_db)):
@@ -425,10 +514,12 @@ def create_herb(herb: HerbCreate, db: Session = Depends(get_db)):
     db.refresh(db_herb)
     return db_herb
 
+
 @app.get("/herbs/", tags=["Herbs"])
-def read_herbs(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    herbs = db.query(Herb).offset(skip).limit(limit).all()
+def read_herbs(db: Session = Depends(get_db)):
+    herbs = db.query(Herb).all()
     return herbs
+
 
 @app.get("/herbs/{herb_id}", tags=["Herbs"])
 def read_herb(herb_id: int, db: Session = Depends(get_db)):
@@ -436,6 +527,7 @@ def read_herb(herb_id: int, db: Session = Depends(get_db)):
     if herb is None:
         raise HTTPException(status_code=404, detail="Herb not found")
     return herb
+
 
 @app.put("/herbs/{herb_id}", tags=["Herbs"])
 def update_herb(herb_id: int, herb: HerbCreate, db: Session = Depends(get_db)):
@@ -447,6 +539,7 @@ def update_herb(herb_id: int, herb: HerbCreate, db: Session = Depends(get_db)):
     db.commit()
     return db_herb
 
+
 @app.delete("/herbs/{herb_id}", tags=["Herbs"])
 def delete_herb(herb_id: int, db: Session = Depends(get_db)):
     db_herb = db.query(Herb).filter(Herb.herb_id == herb_id).first()
@@ -455,6 +548,7 @@ def delete_herb(herb_id: int, db: Session = Depends(get_db)):
     db.delete(db_herb)
     db.commit()
     return {"detail": "Herb deleted"}
+
 
 # CRUD operations for Remedies
 @app.post("/remedies/", tags=["Remedies"])
@@ -465,10 +559,12 @@ def create_remedy(remedy: RemedyCreate, db: Session = Depends(get_db)):
     db.refresh(db_remedy)
     return db_remedy
 
+
 @app.get("/remedies/", tags=["Remedies"])
 def read_remedies(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     remedies = db.query(Remedy).offset(skip).limit(limit).all()
     return remedies
+
 
 @app.get("/remedies/{remedy_id}", tags=["Remedies"])
 def read_remedy(remedy_id: int, db: Session = Depends(get_db)):
@@ -476,6 +572,7 @@ def read_remedy(remedy_id: int, db: Session = Depends(get_db)):
     if remedy is None:
         raise HTTPException(status_code=404, detail="Remedy not found")
     return remedy
+
 
 @app.put("/remedies/{remedy_id}", tags=["Remedies"])
 def update_remedy(remedy_id: int, remedy: RemedyCreate, db: Session = Depends(get_db)):
@@ -487,6 +584,7 @@ def update_remedy(remedy_id: int, remedy: RemedyCreate, db: Session = Depends(ge
     db.commit()
     return db_remedy
 
+
 @app.delete("/remedies/{remedy_id}", tags=["Remedies"])
 def delete_remedy(remedy_id: int, db: Session = Depends(get_db)):
     db_remedy = db.query(Remedy).filter(Remedy.remedy_id == remedy_id).first()
@@ -495,3 +593,38 @@ def delete_remedy(remedy_id: int, db: Session = Depends(get_db)):
     db.delete(db_remedy)
     db.commit()
     return {"detail": "Remedy deleted"}
+
+
+# Define a helper function to predict labels
+def predict(text: str):
+
+    if "hi" in text.lower() or "hello" in text.lower():
+        return "Hi, I am a AyuVibe bot, Ask me about Ayurveda"
+
+    # Tokenize the input text
+    inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=128)
+
+    # Perform inference
+    with torch.no_grad():
+        outputs = model(**inputs)
+        logits = outputs.logits
+
+    # Get the predicted label (class)
+    predicted_class_id = torch.argmax(logits, dim=-1).item()
+    print(predicted_class_id)
+
+    # Map the numeric class ID to the text label
+    predicted_label = label_encoder.inverse_transform([predicted_class_id])[0]
+    print(predicted_label)
+
+    return predicted_label
+
+
+# Define the endpoint for prediction
+@app.post("/predict/", tags=["AyuVibe Chatbot"])
+async def get_prediction(input_text: InputText):
+    text = input_text.text
+    prediction = predict(text)
+
+    # Return the prediction result with the text label
+    return {"prediction": prediction}

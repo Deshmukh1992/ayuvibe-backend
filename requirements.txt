@@ -1,0 +1,17 @@
+fastapi~=0.103.2
+sqlalchemy~=1.4.22
+PyJWT~=2.3.0
+passlib~=1.7.4
+DateTime~=4.3
+pydantic~=1.10.12
+psycopg2
+bcrypt
+
+
+transformers
+datasets
+torch
+tokenizers
+accelerate
+sentencepiece
+faiss-cpu

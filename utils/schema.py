@@ -3,6 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, EmailStr
 
+
 class PatientCreate(BaseModel):
     first_name: str
     last_name: str
@@ -143,8 +144,10 @@ class HerbCreate(BaseModel):
     dosage: str = None
     form: str = None
 
+
 class HerbResponse(HerbCreate):
     herb_id: int
+
 
 class RemedyCreate(BaseModel):
     remedy_name: str
@@ -154,6 +157,11 @@ class RemedyCreate(BaseModel):
     dosage_instructions: str = None
     precautions: str = None
 
+
 class RemedyResponse(RemedyCreate):
     remedy_id: int
 
+
+# Define the input data schema using Pydantic
+class InputText(BaseModel):
+    text: str
