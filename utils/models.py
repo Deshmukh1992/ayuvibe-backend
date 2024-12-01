@@ -59,6 +59,12 @@ class Diagnosis(Base):
     appointment_id = Column(Integer, ForeignKey("appointments.appointment_id"))
     diagnosis_date = Column(DateTime, server_default=func.now())
     diagnosis_description = Column(Text, nullable=False)
+    heart_rate = Column(Text)
+    body_temp = Column(Text)
+    glucose_level = Column(Text)
+    oxigen_level = Column(Text)
+    blood_pressure = Column(Text)
+    bmi = Column(Text)
 
     appointment = relationship("Appointment")
 
@@ -108,3 +114,16 @@ class Remedy(Base):
     preparation_method = Column(Text)
     dosage_instructions = Column(String)
     precautions = Column(Text)
+
+
+class Healthinfo(Base):
+    __tablename__ = "patient_health_info"
+    healthinfo_id = Column(Integer, primary_key=True, index=True)
+    patient_id = Column(Integer)
+    heart_rate = Column(Text)
+    body_temp = Column(Text)
+    glucose_level = Column(Text)
+    oxigen_level = Column(Text)
+    blood_pressure = Column(Text)
+    bmi = Column(Text)
+

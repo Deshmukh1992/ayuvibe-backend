@@ -6,8 +6,8 @@ from database.db import engine, get_db, Base
 from utils.schema import (PatientSignup, PatientUpdate, DoctorSignup, DoctorUpdate,
                           AppointmentCreate, AppointmentUpdate, DiagnosisCreate, DiagnosisUpdate,
                           TreatmentCreate, TreatmentUpdate, FollowUpCreate, FollowUpUpdate, Login, InputText,
-                          HerbCreate, RemedyCreate)
-from utils.models import Doctor, Patient, Appointment, Diagnosis, Treatment, FollowUp, Herb, Remedy
+                          HerbCreate, RemedyCreate, HealthinfoCreate, HealthinfoUpdate)
+from utils.models import Doctor, Patient, Appointment, Diagnosis, Treatment, FollowUp, Herb, Remedy, Healthinfo
 from utils.jwt import hash_password, verify_password, create_access_token
 from fastapi.security import OAuth2PasswordBearer
 from datetime import timedelta
@@ -593,6 +593,45 @@ def delete_remedy(remedy_id: int, db: Session = Depends(get_db)):
     db.delete(db_remedy)
     db.commit()
     return {"detail": "Remedy deleted"}
+
+
+# Create Healthinfo
+@app.post("/healthinfo/", tags=["Healthinfo"])
+def create_healthinfo(healthinfo: HealthinfoCreate, db: Session = Depends(get_db)):
+    db_healthinfo = Healthinfo(**healthinfo.dict())
+    db.add(db_healthinfo)
+    db.commit()
+    db.refresh(db_healthinfo)
+    return db_healthinfo
+
+# Get all Healthinfo records
+@app.get("/healthinfo/", tags=["Healthinfo"])
+def get_healthinfo(db: Session = Depends(get_db)):
+    return db.query(Healthinfo).all()
+
+
+@app.get("/healthinfo/{patient_id}", tags=["Healthinfo"])
+def get_healthinfo_by_patient_id(patient_id: int, db: Session = Depends(get_db)):
+    db_healthinfo = db.query(Healthinfo).filter(Healthinfo.patient_id == patient_id).all()
+    if not db_healthinfo:
+        return []
+    return db_healthinfo
+
+# Update Healthinfo
+@app.put("/healthinfo/{patient_id}", tags=["Healthinfo"])
+def update_healthinfo_by_patient_id(patient_id: int, healthinfo: HealthinfoUpdate, db: Session = Depends(get_db)):
+    db_healthinfo = db.query(Healthinfo).filter(Healthinfo.patient_id == patient_id).first()
+
+    if not db_healthinfo:
+        raise HTTPException(status_code=404, detail="Healthinfo for this patient not found")
+
+    # Update the fields with the values from the request
+    for key, value in healthinfo.dict(exclude_unset=True).items():
+        setattr(db_healthinfo, key, value)
+
+    db.commit()
+    db.refresh(db_healthinfo)
+    return db_healthinfo
 
 
 # Define a helper function to predict labels

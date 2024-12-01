@@ -100,10 +100,22 @@ class AppointmentUpdate(BaseModel):
 class DiagnosisCreate(BaseModel):
     appointment_id: int
     diagnosis_description: str
+    heart_rate: str
+    body_temp: str
+    glucose_level: str
+    oxigen_level: str
+    blood_pressure: str
+    bmi: str
 
 
 class DiagnosisUpdate(BaseModel):
     diagnosis_description: Optional[str]
+    heart_rate: str
+    body_temp: str
+    glucose_level: str
+    oxigen_level: str
+    blood_pressure: str
+    bmi: str
 
 
 class TreatmentCreate(BaseModel):
@@ -165,3 +177,23 @@ class RemedyResponse(RemedyCreate):
 # Define the input data schema using Pydantic
 class InputText(BaseModel):
     text: str
+
+
+class HealthinfoCreate(BaseModel):
+    healthinfo_id: int
+    patient_id: int
+    heart_rate: str
+    body_temp: str
+    glucose_level: str
+    oxigen_level: str
+    blood_pressure: str
+    bmi: str
+
+
+class HealthinfoUpdate(BaseModel):
+    heart_rate: str
+    body_temp: str
+    glucose_level: str
+    oxigen_level: str
+    blood_pressure: str
+    bmi: str
